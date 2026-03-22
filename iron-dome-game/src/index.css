@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #0a1520;
+  color: white;
+  font-family: "Segoe UI", Arial, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Hebrew RTL utility */
+[dir="rtl"] { direction: rtl; }
+
+/* Mobile: prevent zoom on double-tap */
+canvas { touch-action: none; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
