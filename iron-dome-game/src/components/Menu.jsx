@@ -118,7 +118,7 @@ export default function Menu({ onStart, globalStats, bestScore }) {
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className="text-white/40 text-xs">{level.duration}ש׳</span>
-                <span className="text-green-400/70 text-xs">>{level.passScore.toLocaleString()}</span>
+                <span className="text-green-400/70 text-xs">{'>'}{level.passScore.toLocaleString()}</span>
               </div>
               <ChevronRight size={18} className="text-white/30 group-hover:text-white/60 transition-colors shrink-0" />
             </button>
