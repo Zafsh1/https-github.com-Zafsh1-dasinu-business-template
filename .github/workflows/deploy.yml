@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - claude/iron-dome-defense-game-PwwSZ
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -26,19 +27,36 @@ jobs:
         run: npm run build
         working-directory: iron-dome-game
 
-      - name: Deploy to Netlify
-        run: |
-          npm install -g netlify-cli
-          # Create site if no site ID is stored, else reuse existing
-          if [ -z "$NETLIFY_SITE_ID" ]; then
-            SITE_JSON=$(netlify sites:create --name "iron-dome-game-${{ github.repository_owner }}" --json 2>/dev/null || \
-                        netlify sites:create --name "iron-dome-${{ github.run_id }}" --json)
-            SITE_ID=$(echo "$SITE_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-          else
-            SITE_ID=$NETLIFY_SITE_ID
-          fi
-          netlify deploy --dir=iron-dome-game/dist --site=$SITE_ID --prod --json | \
-            python3 -c "import json,sys; d=json.load(sys.stdin); print('::notice title=Live URL::' + d.get('deploy_url', d.get('url','')))"
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Create Netlify site and deploy
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+        run: |
+          set -e
+
+          echo "=== Checking auth ==="
+          netlify status
+
+          echo "=== Creating site ==="
+          SITE_NAME="iron-dome-$(date +%s)"
+          SITE_JSON=$(netlify sites:create --name "$SITE_NAME" --json)
+          echo "Site JSON: $SITE_JSON"
+
+          SITE_ID=$(echo "$SITE_JSON" | jq -r '.id')
+          SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url // .url')
+          echo "Site ID: $SITE_ID"
+          echo "Site URL: $SITE_URL"
+
+          echo "=== Deploying ==="
+          netlify deploy \
+            --dir=iron-dome-game/dist \
+            --site="$SITE_ID" \
+            --prod \
+            --message="Iron Dome Game"
+
+          echo ""
+          echo "=============================="
+          echo "LIVE URL: $SITE_URL"
+          echo "=============================="
