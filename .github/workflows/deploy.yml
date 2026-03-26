@@ -30,33 +30,49 @@ jobs:
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      - name: Create Netlify site and deploy
+      - name: Deploy to Netlify
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         run: |
           set -e
 
-          echo "=== Checking auth ==="
-          netlify status
+          # Check token
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "ERROR: NETLIFY_AUTH_TOKEN secret is not set!"
+            echo "Go to: Settings -> Secrets -> Actions -> New repository secret"
+            echo "Name: NETLIFY_AUTH_TOKEN"
+            exit 1
+          fi
+          echo "Token is set (first 4 chars): ${NETLIFY_AUTH_TOKEN:0:4}..."
 
-          echo "=== Creating site ==="
+          # Get account slug
+          echo "--- Fetching accounts ---"
+          ACCOUNTS=$(netlify api listAccountsForUser)
+          echo "Accounts: $ACCOUNTS"
+          SLUG=$(echo "$ACCOUNTS" | jq -r '.[0].slug')
+          echo "Using account slug: $SLUG"
+
+          # Create site
+          echo "--- Creating site ---"
           SITE_NAME="iron-dome-$(date +%s)"
-          SITE_JSON=$(netlify sites:create --name "$SITE_NAME" --json)
-          echo "Site JSON: $SITE_JSON"
-
-          SITE_ID=$(echo "$SITE_JSON" | jq -r '.id')
-          SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url // .url')
+          SITE=$(netlify sites:create \
+            --name "$SITE_NAME" \
+            --account-slug "$SLUG" \
+            --json)
+          echo "Site response: $SITE"
+          SITE_ID=$(echo "$SITE" | jq -r '.id')
+          SITE_URL=$(echo "$SITE" | jq -r '.ssl_url // .url')
           echo "Site ID: $SITE_ID"
           echo "Site URL: $SITE_URL"
 
-          echo "=== Deploying ==="
+          # Deploy
+          echo "--- Deploying ---"
           netlify deploy \
             --dir=iron-dome-game/dist \
             --site="$SITE_ID" \
-            --prod \
-            --message="Iron Dome Game"
+            --prod
 
           echo ""
-          echo "=============================="
-          echo "LIVE URL: $SITE_URL"
-          echo "=============================="
+          echo "=========================================="
+          echo "LIVE: $SITE_URL"
+          echo "=========================================="
