@@ -1,12 +1,9 @@
-name: Deploy to GitHub Pages
+name: Deploy to Netlify
 
 on:
   push:
     branches:
       - claude/iron-dome-defense-game-PwwSZ
-
-permissions:
-  contents: write
 
 jobs:
   deploy:
@@ -29,9 +26,19 @@ jobs:
         run: npm run build
         working-directory: iron-dome-game
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: iron-dome-game/dist
-          force_orphan: true
+      - name: Deploy to Netlify
+        run: |
+          npm install -g netlify-cli
+          # Create site if no site ID is stored, else reuse existing
+          if [ -z "$NETLIFY_SITE_ID" ]; then
+            SITE_JSON=$(netlify sites:create --name "iron-dome-game-${{ github.repository_owner }}" --json 2>/dev/null || \
+                        netlify sites:create --name "iron-dome-${{ github.run_id }}" --json)
+            SITE_ID=$(echo "$SITE_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          else
+            SITE_ID=$NETLIFY_SITE_ID
+          fi
+          netlify deploy --dir=iron-dome-game/dist --site=$SITE_ID --prod --json | \
+            python3 -c "import json,sys; d=json.load(sys.stdin); print('::notice title=Live URL::' + d.get('deploy_url', d.get('url','')))"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
